@@ -1,0 +1,37 @@
+[package]
+name = "mw-rl"
+version = "0.1.0"
+authors = ["The Mortal Wombat Team <https://tildegit.org/mortalwombat>"]
+edition = "2018"
+description = "Mortal Wombat is a wacky roguelike game set down unduh."
+repository = "https://tildegit.com/mortalwombat/mw-rl"
+readme = "README.md"
+keywords = ["game", "roguelike", "comedy", "satire"]
+license = "GPLv3"
+
+[dependencies]
+regex = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+debug = false
+rpath = false
+debug-assertions = false
+overflow-checks = false
+
+[profile.dev]
+opt-level = 0
+lto = false
+debug = true
+rpath = false
+debug-assertions = true
+overflow-checks = true
+
+[profile.bench]
+opt-level = 3
+lto = true
+debug = false
+debug-assertions = false
+rpath = false
+overflow-checks = false
