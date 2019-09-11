@@ -2,7 +2,7 @@
 
 Trying my hand at building a roguelike with `rltk`, the roguelike toolkit.
 
-Right now it's just a simple window that says `MORTAL WOMBAT MFERS`. For a silly screencast, [click here](https://tildegit.org/MortalWombat/mw-rl/src/branch/master/assets/mw-rl-screencast.mp4)
+Right now it's just some arbitrary walk-aroundy-thing. For a silly screencast, [click here](https://tildegit.org/MortalWombat/mw-rl/raw/branch/master/assets/mw-rl-screencast.mp4)
 
 ```
 $ git clone https://tildegit.org/mortalwombat/mw-rl.git
