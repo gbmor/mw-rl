@@ -10,7 +10,7 @@ keywords = ["game", "roguelike", "comedy", "satire"]
 license = "GPLv3"
 
 [dependencies]
-regex = "1"
+rltk = { git = "https://github.com/thebracket/rltk_rs" }
 
 [profile.release]
 opt-level = 3
