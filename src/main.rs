@@ -1,5 +1,8 @@
 use rand::Rng;
-use rltk::{Console, GameState, Rltk, VirtualKeyCode, RGB};
+use rltk::{
+    Algorithm2D, BaseMap, Console, GameState, Point, Rltk,
+    VirtualKeyCode, RGB,
+};
 
 #[derive(PartialEq, Copy, Clone)]
 enum TileType {
@@ -10,6 +13,7 @@ enum TileType {
 struct State {
     map: Vec<TileType>,
     player_position: usize,
+    visible: Vec<bool>,
 }
 
 fn xy_idx(x: i32, y: i32) -> usize {
@@ -25,6 +29,7 @@ impl State {
         let mut state = State {
             map: vec![TileType::Floor; 80 * 50],
             player_position: xy_idx(40, 25),
+            visible: vec![false; 80 * 50],
         };
 
         (0..80).into_iter().for_each(|x| {
@@ -63,6 +68,7 @@ impl State {
 }
 
 impl GameState for State {
+    #[allow(non_snake_case)]
     fn tick(&mut self, ctx: &mut Rltk) {
         match ctx.key {
             None => {}
@@ -90,31 +96,40 @@ impl GameState for State {
             }
         }
 
+        self.visible.iter_mut().for_each(|v| {
+            *v = false;
+        });
+
+        let player_position =
+            self.index_to_point2d(self.player_position as i32);
+        let fov = rltk::field_of_view(player_position, 8, self);
+
+        fov.iter().for_each(|idx| {
+            self.visible[xy_idx(idx.x, idx.y)] = true;
+        });
+
         ctx.cls();
 
         let mut y = 0;
         let mut x = 0;
-        &self.map.iter().for_each(|tile| {
+        &self.map.iter().enumerate().for_each(|(i, tile)| {
+            let mut fg;
+            let mut glyph = ".";
+
             match tile {
                 TileType::Floor => {
-                    ctx.print_color(
-                        x,
-                        y,
-                        RGB::from_f32(0.5, 0.5, 0.5),
-                        RGB::from_f32(0., 0., 0.),
-                        ".",
-                    );
+                    fg = RGB::from_f32(0.5, 0.5, 0.0);
                 }
                 TileType::Wall => {
-                    ctx.print_color(
-                        x,
-                        y,
-                        RGB::from_f32(0.0, 1.0, 0.0),
-                        RGB::from_f32(0., 0., 0.),
-                        "#",
-                    );
+                    fg = RGB::from_f32(0.0, 1.0, 0.0);
+                    glyph = "#";
                 }
             }
+
+            if !self.visible[i] {
+                fg = fg.to_greyscale();
+            }
+            ctx.print_color(x, y, fg, RGB::from_f32(0., 0., 0.), glyph);
             x += 1;
             if x > 79 {
                 x = 0;
@@ -130,6 +145,27 @@ impl GameState for State {
             RGB::from_f32(0., 0., 0.),
             "@",
         );
+    }
+}
+
+impl BaseMap for State {
+    fn is_opaque(&self, idx: i32) -> bool {
+        self.map[idx as usize] == TileType::Wall
+    }
+    fn get_available_exits(&self, _idx: i32) -> Vec<(i32, f32)> {
+        Vec::new() // no exits? it's a trap!!!
+    }
+    fn get_pathing_distance(&self, _idx1: i32, _idx2: i32) -> f32 {
+        0.0
+    }
+}
+
+impl Algorithm2D for State {
+    fn point2d_to_index(&self, pt: Point) -> i32 {
+        xy_idx(pt.x, pt.y) as i32
+    }
+    fn index_to_point2d(&self, idx: i32) -> Point {
+        Point::new(idx % 80, idx / 80)
     }
 }
 
