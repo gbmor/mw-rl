@@ -1,4 +1,4 @@
-# Mortal Wombat (roguelike)
+# Mortal Wombat: the Roguelike
 
 Trying my hand at building a roguelike with `rltk`, the roguelike toolkit.
 
