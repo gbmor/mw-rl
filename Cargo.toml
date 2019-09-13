@@ -12,6 +12,8 @@ license = "GPLv3"
 [dependencies]
 rand = "0.7"
 rltk = { git = "https://github.com/thebracket/rltk_rs" }
+specs = "0.15"
+specs-derive = "0.4"
 
 [profile.release]
 opt-level = 3

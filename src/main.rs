@@ -1,177 +1,149 @@
-use rand::Rng;
-use rltk::{
-    Algorithm2D, BaseMap, Console, GameState, Point, Rltk,
-    VirtualKeyCode, RGB,
-};
+#[macro_use]
+extern crate specs_derive;
 
-#[derive(PartialEq, Copy, Clone)]
-enum TileType {
-    Wall,
-    Floor,
+use rltk::{Console, GameState, Rltk, VirtualKeyCode, RGB};
+use specs::prelude::*;
+
+#[derive(Debug, Component)]
+struct Player {}
+
+#[derive(Debug, Component)]
+struct Position {
+    x: i32,
+    y: i32,
+}
+
+#[derive(Component)]
+struct Renderable {
+    glyph: u8,
+    fg: RGB,
+    bg: RGB,
+}
+
+#[derive(Component)]
+struct LeftMover {}
+
+struct LeftWalker {}
+impl<'a> System<'a> for LeftWalker {
+    type SystemData =
+        (ReadStorage<'a, LeftMover>, WriteStorage<'a, Position>);
+
+    fn run(&mut self, (lefty, mut pos): Self::SystemData) {
+        for (_lefty, pos) in (&lefty, &mut pos).join() {
+            pos.x -= -1;
+            pos.y -= 1;
+            if pos.x < 0 {
+                pos.x = 79;
+            }
+            if pos.x > 79 {
+                pos.x = 0;
+            }
+            if pos.y < 0 {
+                pos.y = 49;
+            }
+            if pos.y > 49 {
+                pos.y = 0;
+            }
+        }
+    }
 }
 
 struct State {
-    map: Vec<TileType>,
-    player_position: usize,
-    visible: Vec<bool>,
-}
-
-fn xy_idx(x: i32, y: i32) -> usize {
-    (y as usize * 80) + x as usize
-}
-
-fn idx_xy(idx: usize) -> (i32, i32) {
-    (idx as i32 % 80, idx as i32 / 80)
-}
-
-impl State {
-    fn new() -> State {
-        let mut state = State {
-            map: vec![TileType::Floor; 80 * 50],
-            player_position: xy_idx(40, 25),
-            visible: vec![false; 80 * 50],
-        };
-
-        (0..80).into_iter().for_each(|x| {
-            state.map[xy_idx(x, 0)] = TileType::Wall;
-            state.map[xy_idx(x, 49)] = TileType::Wall;
-        });
-
-        (0..50).into_iter().for_each(|y| {
-            state.map[xy_idx(0, y)] = TileType::Wall;
-            state.map[xy_idx(79, y)] = TileType::Wall;
-        });
-
-        let mut rng = rand::thread_rng();
-
-        (0..400).into_iter().for_each(|_| {
-            let x = rng.gen_range(1, 79);
-            let y = rng.gen_range(1, 49);
-            let idx = xy_idx(x, y);
-
-            if state.player_position != idx {
-                state.map[idx] = TileType::Wall;
-            }
-        });
-
-        state
-    }
-
-    fn move_player(&mut self, dx: i32, dy: i32) {
-        let cur_pos = idx_xy(self.player_position);
-        let new_pos = (cur_pos.0 + dx, cur_pos.1 + dy);
-        let new_idx = xy_idx(new_pos.0, new_pos.1);
-        if self.map[new_idx] == TileType::Floor {
-            self.player_position = new_idx;
-        }
-    }
+    ecs: World,
+    systems: Dispatcher<'static, 'static>,
 }
 
 impl GameState for State {
-    #[allow(non_snake_case)]
     fn tick(&mut self, ctx: &mut Rltk) {
-        match ctx.key {
-            None => {}
-            Some(key) => {
-                match key {
-                    //numpad
-                    VirtualKeyCode::Numpad8 => self.move_player(0, -1),
-                    VirtualKeyCode::Numpad4 => self.move_player(-1, 0),
-                    VirtualKeyCode::Numpad6 => self.move_player(1, 0),
-                    VirtualKeyCode::Numpad2 => self.move_player(0, 1),
-
-                    //diag
-                    VirtualKeyCode::Numpad7 => self.move_player(-1, -1),
-                    VirtualKeyCode::Numpad9 => self.move_player(1, -1),
-                    VirtualKeyCode::Numpad1 => self.move_player(-1, 1),
-                    VirtualKeyCode::Numpad3 => self.move_player(1, 1),
-
-                    //arrows
-                    VirtualKeyCode::Up => self.move_player(0, -1),
-                    VirtualKeyCode::Down => self.move_player(0, 1),
-                    VirtualKeyCode::Left => self.move_player(-1, 0),
-                    VirtualKeyCode::Right => self.move_player(1, 0),
-                    _ => {}
-                }
-            }
-        }
-
-        self.visible.iter_mut().for_each(|v| {
-            *v = false;
-        });
-
-        let player_position =
-            self.index_to_point2d(self.player_position as i32);
-        let fov = rltk::field_of_view(player_position, 8, self);
-
-        fov.iter().for_each(|idx| {
-            self.visible[xy_idx(idx.x, idx.y)] = true;
-        });
-
         ctx.cls();
 
-        let mut y = 0;
-        let mut x = 0;
-        &self.map.iter().enumerate().for_each(|(i, tile)| {
-            let mut fg;
-            let mut glyph = ".";
+        player_input(self, ctx);
+        self.systems.dispatch(&self.ecs);
 
-            match tile {
-                TileType::Floor => {
-                    fg = RGB::from_f32(0.5, 0.5, 0.0);
-                }
-                TileType::Wall => {
-                    fg = RGB::from_f32(0.0, 1.0, 0.0);
-                    glyph = "#";
-                }
-            }
+        let positions = self.ecs.read_storage::<Position>();
+        let renderables = self.ecs.read_storage::<Renderable>();
 
-            if !self.visible[i] {
-                fg = fg.to_greyscale();
-            }
-            ctx.print_color(x, y, fg, RGB::from_f32(0., 0., 0.), glyph);
-            x += 1;
-            if x > 79 {
-                x = 0;
-                y += 1;
-            }
-        });
-
-        let ppos = idx_xy(self.player_position);
-        ctx.print_color(
-            ppos.0,
-            ppos.1,
-            RGB::from_f32(1.0, 1.0, 0.0),
-            RGB::from_f32(0., 0., 0.),
-            "@",
-        );
-    }
-}
-
-impl BaseMap for State {
-    fn is_opaque(&self, idx: i32) -> bool {
-        self.map[idx as usize] == TileType::Wall
-    }
-    fn get_available_exits(&self, _idx: i32) -> Vec<(i32, f32)> {
-        Vec::new() // no exits? it's a trap!!!
-    }
-    fn get_pathing_distance(&self, _idx1: i32, _idx2: i32) -> f32 {
-        0.0
-    }
-}
-
-impl Algorithm2D for State {
-    fn point2d_to_index(&self, pt: Point) -> i32 {
-        xy_idx(pt.x, pt.y) as i32
-    }
-    fn index_to_point2d(&self, idx: i32) -> Point {
-        Point::new(idx % 80, idx / 80)
+        for (pos, rend) in (&positions, &renderables).join() {
+            ctx.set(pos.x, pos.y, rend.fg, rend.bg, rend.glyph);
+        }
     }
 }
 
 fn main() {
     let context =
-        Rltk::init_simple8x8(80, 50, "Mortal Wombat", "resources");
-    let gs = State::new();
+        Rltk::init_simple8x8(80, 50, "MORTAL WOMBAT", "resources");
+    let mut gs = State {
+        ecs: World::new(),
+        systems: DispatcherBuilder::new()
+            .with(LeftWalker {}, "left_walker", &[])
+            .build(),
+    };
+    gs.ecs.register::<Position>();
+    gs.ecs.register::<Renderable>();
+    gs.ecs.register::<LeftMover>();
+    gs.ecs.register::<Player>();
+
+    gs.ecs
+        .create_entity()
+        .with(Position { x: 40, y: 25 })
+        .with(Renderable {
+            glyph: rltk::to_cp437('@'),
+            fg: RGB::named(rltk::YELLOW),
+            bg: RGB::named(rltk::BLACK),
+        })
+        .with(Player {})
+        .build();
+
+    (0..10).into_iter().for_each(|i| {
+        gs.ecs
+            .create_entity()
+            .with(Position { x: i * 7, y: 20 })
+            .with(Renderable {
+                glyph: rltk::to_cp437('?'),
+                fg: RGB::named(rltk::RED),
+                bg: RGB::named(rltk::BLACK),
+            })
+            .with(LeftMover {})
+            .build();
+    });
+
     rltk::main_loop(context, gs);
+}
+
+fn try_move_player(dx: i32, dy: i32, ecs: &mut World) {
+    let mut posns = ecs.write_storage::<Position>();
+    let mut players = ecs.write_storage::<Player>();
+
+    (&mut players, &mut posns).join().into_iter().for_each(
+        |(_player, pos)| {
+            pos.x += dx;
+            pos.y += dy;
+
+            if pos.x < 0 {
+                pos.x = 0;
+            }
+            if pos.x > 79 {
+                pos.x = 79;
+            }
+            if pos.y < 0 {
+                pos.y = 0;
+            }
+            if pos.y > 49 {
+                pos.y = 49;
+            }
+        },
+    );
+}
+
+fn player_input(gs: &mut State, ctx: &mut Rltk) {
+    match ctx.key {
+        None => {}
+        Some(key) => match key {
+            VirtualKeyCode::Left => try_move_player(-1, 0, &mut gs.ecs),
+            VirtualKeyCode::Right => try_move_player(1, 0, &mut gs.ecs),
+            VirtualKeyCode::Up => try_move_player(0, -1, &mut gs.ecs),
+            VirtualKeyCode::Down => try_move_player(0, 1, &mut gs.ecs),
+            _ => {}
+        },
+    }
 }
