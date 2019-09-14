@@ -56,7 +56,3 @@ fn main() {
 
     rltk::main_loop(context, gs);
 }
-
-fn xy_idx(x: i32, y: i32) -> usize {
-    (y as usize * 80) + x as usize
-}

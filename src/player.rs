@@ -2,6 +2,7 @@ use rltk::{Rltk, VirtualKeyCode};
 use specs::prelude::*;
 
 use crate::entity::{Player, Position, TileType};
+use crate::map;
 use crate::player;
 use crate::state::State;
 
@@ -12,7 +13,7 @@ pub fn try_move(dx: i32, dy: i32, ecs: &mut World) {
 
     (&mut players, &mut posns).join().into_iter().for_each(
         |(_player, pos)| {
-            let dest_idx = crate::xy_idx(pos.x + dx, pos.y + dy);
+            let dest_idx = map::xy_idx(pos.x + dx, pos.y + dy);
             if map[dest_idx] != TileType::Wall {
                 pos.x += dx;
                 pos.y += dy;

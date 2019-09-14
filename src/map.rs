@@ -2,17 +2,21 @@ use rltk::{Console, Rltk, RGB};
 
 use crate::entity::TileType;
 
+pub fn xy_idx(x: i32, y: i32) -> usize {
+    (y as usize * 80) + x as usize
+}
+
 pub fn new() -> Vec<TileType> {
     let mut map = vec![TileType::Floor; 80 * 50];
 
     (0..80).into_iter().for_each(|x| {
-        map[crate::xy_idx(x, 0)] = TileType::Wall;
-        map[crate::xy_idx(x, 49)] = TileType::Wall;
+        map[xy_idx(x, 0)] = TileType::Wall;
+        map[xy_idx(x, 49)] = TileType::Wall;
     });
 
     (0..50).into_iter().for_each(|y| {
-        map[crate::xy_idx(0, y)] = TileType::Wall;
-        map[crate::xy_idx(79, y)] = TileType::Wall;
+        map[xy_idx(0, y)] = TileType::Wall;
+        map[xy_idx(79, y)] = TileType::Wall;
     });
 
     //rando-splat of walls
@@ -21,8 +25,8 @@ pub fn new() -> Vec<TileType> {
     (0..400).into_iter().for_each(|_| {
         let x = rng.roll_dice(1, 79);
         let y = rng.roll_dice(1, 49);
-        let idx = crate::xy_idx(x, y);
-        if idx != crate::xy_idx(40, 25) {
+        let idx = xy_idx(x, y);
+        if idx != xy_idx(40, 25) {
             map[idx] = TileType::Wall;
         }
     });
