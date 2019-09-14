@@ -7,11 +7,10 @@ use specs::prelude::*;
 mod entity;
 mod map;
 mod player;
+mod rect;
 mod state;
 
-use crate::entity::{
-    LeftMover, LeftWalker, Player, Position, Renderable,
-};
+use crate::entity::{Player, Position, Renderable};
 use crate::state::State;
 
 fn main() {
@@ -19,20 +18,20 @@ fn main() {
         Rltk::init_simple8x8(80, 50, "MORTAL WOMBAT", "resources");
     let mut gs = State {
         ecs: World::new(),
-        systems: DispatcherBuilder::new()
-            .with(LeftWalker {}, "left_walker", &[])
-            .build(),
+        systems: DispatcherBuilder::new().build(),
     };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
-    gs.ecs.register::<LeftMover>();
     gs.ecs.register::<Player>();
 
-    gs.ecs.insert(map::new());
+    let (rooms, map) = map::new_room_corridors();
+    gs.ecs.insert(map);
 
+    // start player in center of room 1
+    let (p_x, p_y) = rooms[0].center();
     gs.ecs
         .create_entity()
-        .with(Position { x: 40, y: 25 })
+        .with(Position { x: p_x, y: p_y })
         .with(Renderable {
             glyph: rltk::to_cp437('@'),
             fg: RGB::named(rltk::YELLOW),
@@ -40,19 +39,6 @@ fn main() {
         })
         .with(Player {})
         .build();
-
-    (0..10).into_iter().for_each(|i| {
-        gs.ecs
-            .create_entity()
-            .with(Position { x: i * 7, y: 20 })
-            .with(Renderable {
-                glyph: rltk::to_cp437('?'),
-                fg: RGB::named(rltk::RED),
-                bg: RGB::named(rltk::BLACK),
-            })
-            .with(LeftMover {})
-            .build();
-    });
 
     rltk::main_loop(context, gs);
 }
