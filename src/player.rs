@@ -2,19 +2,18 @@ use rltk::{Rltk, VirtualKeyCode};
 use specs::prelude::*;
 
 use crate::entity::{Player, Position, TileType};
-use crate::map;
-use crate::player;
+use crate::map::Map;
 use crate::state::State;
 
 pub fn try_move(dx: i32, dy: i32, ecs: &mut World) {
     let mut posns = ecs.write_storage::<Position>();
     let mut players = ecs.write_storage::<Player>();
-    let map = ecs.fetch::<Vec<TileType>>();
+    let map = ecs.fetch::<Map>();
 
     (&mut players, &mut posns).join().into_iter().for_each(
         |(_player, pos)| {
-            let dest_idx = map::xy_idx(pos.x + dx, pos.y + dy);
-            if map[dest_idx] != TileType::Wall {
+            let dest_idx = map.xy_idx(pos.x + dx, pos.y + dy);
+            if map.tiles[dest_idx] != TileType::Wall {
                 pos.x += dx;
                 pos.y += dy;
 

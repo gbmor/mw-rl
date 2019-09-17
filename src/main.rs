@@ -11,6 +11,7 @@ mod rect;
 mod state;
 
 use crate::entity::{Player, Position, Renderable};
+use crate::map::Map;
 use crate::state::State;
 
 fn main() {
@@ -24,11 +25,11 @@ fn main() {
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<Player>();
 
-    let (rooms, map) = map::new_room_corridors();
-    gs.ecs.insert(map);
+    let map = Map::new_room_corridors();
+    gs.ecs.insert(map.clone());
 
     // start player in center of room 1
-    let (p_x, p_y) = rooms[0].center();
+    let (p_x, p_y) = map.rooms[0].center();
     gs.ecs
         .create_entity()
         .with(Position { x: p_x, y: p_y })
