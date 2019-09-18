@@ -1,8 +1,13 @@
 use std::cmp::{max, min};
 
-use rltk::{Console, RandomNumberGenerator, Rltk, RGB};
+use rltk::{
+    Algorithm2D, BaseMap, Console, Point, RandomNumberGenerator, Rltk,
+    RGB,
+};
+use specs::prelude::*;
 
-use crate::entity::TileType;
+use crate::component::Viewshed;
+use crate::entity::{Player, TileType};
 use crate::rect::Rect;
 
 #[derive(Clone)]
@@ -11,6 +16,32 @@ pub struct Map {
     pub rooms: Vec<Rect>,
     pub width: i32,
     pub height: i32,
+}
+
+impl Algorithm2D for Map {
+    fn point2d_to_index(&self, pt: Point) -> i32 {
+        (pt.y * self.width) + pt.x
+    }
+    fn index_to_point2d(&self, idx: i32) -> Point {
+        Point {
+            x: idx % self.width,
+            y: idx / self.width,
+        }
+    }
+}
+
+impl BaseMap for Map {
+    fn is_opaque(&self, idx: i32) -> bool {
+        self.tiles[idx as usize] == TileType::Wall
+    }
+    fn get_available_exits(&self, _idx: i32) -> Vec<(i32, f32)> {
+        Vec::new()
+    }
+    fn get_pathing_distance(&self, idx1: i32, idx2: i32) -> f32 {
+        let p1 = Point::new(idx1 % self.width, idx1 / self.width);
+        let p2 = Point::new(idx2 % self.width, idx2 / self.width);
+        rltk::DistanceAlg::Pythagoras.distance2d(p1, p2)
+    }
 }
 
 impl Map {
@@ -131,35 +162,46 @@ pub fn new_test() -> Vec<TileType> {
 }
 */
 
-pub fn draw(map: &[TileType], ctx: &mut Rltk) {
-    let mut y = 0;
-    let mut x = 0;
-    map.iter().for_each(|tile| {
-        match tile {
-            TileType::Floor => {
-                ctx.set(
-                    x,
-                    y,
-                    RGB::from_f32(0.5, 0.5, 0.5),
-                    RGB::from_f32(0., 0., 0.),
-                    rltk::to_cp437('.'),
-                );
-            }
-            TileType::Wall => {
-                ctx.set(
-                    x,
-                    y,
-                    RGB::from_f32(0.0, 1.0, 0.0),
-                    RGB::from_f32(0., 0., 0.),
-                    rltk::to_cp437('#'),
-                );
-            }
-        }
+pub fn draw(ecs: &World, ctx: &mut Rltk) {
+    let mut viewsheds = ecs.write_storage::<Viewshed>();
+    let mut players = ecs.write_storage::<Player>();
+    let map = ecs.fetch::<Map>();
 
-        x += 1;
-        if x > 79 {
-            x = 0;
-            y += 1;
-        }
-    });
+    (&mut players, &mut viewsheds).join().into_iter().for_each(
+        |(_player, viewshed)| {
+            let mut y = 0;
+            let mut x = 0;
+            map.tiles.iter().for_each(|tile| {
+                let pt = Point::new(x, y);
+                if viewshed.visible_tiles.contains(&pt) {
+                    match tile {
+                        TileType::Floor => {
+                            ctx.set(
+                                x,
+                                y,
+                                RGB::from_f32(0.5, 0.5, 0.5),
+                                RGB::from_f32(0., 0., 0.),
+                                rltk::to_cp437('.'),
+                            );
+                        }
+                        TileType::Wall => {
+                            ctx.set(
+                                x,
+                                y,
+                                RGB::from_f32(0.0, 1.0, 0.0),
+                                RGB::from_f32(0., 0., 0.),
+                                rltk::to_cp437('#'),
+                            );
+                        }
+                    }
+                }
+
+                x += 1;
+                if x > 79 {
+                    x = 0;
+                    y += 1;
+                }
+            });
+        },
+    );
 }

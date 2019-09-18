@@ -1,7 +1,7 @@
 use rltk::{Console, GameState, Rltk};
 use specs::prelude::*;
 
-use crate::entity::{Position, Renderable, TileType};
+use crate::entity::{Position, Renderable};
 use crate::map;
 use crate::player;
 
@@ -17,8 +17,7 @@ impl GameState for State {
         player::input(self, ctx);
         self.systems.dispatch(&self.ecs);
 
-        let map = self.ecs.fetch::<Vec<TileType>>();
-        map::draw(&map, ctx);
+        map::draw(&self.ecs, ctx);
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
