@@ -17,3 +17,7 @@ $ ./target/release/mw-rl
 
 * [`rltk`](https://github.com/thebracket/rltk_rs)
 
+This repository is mirrored across three hosts. Primary development is at `tildegit`.
+* [`tildegit`](https://tildegit.org/mortalwombat/mw-rl)
+* [`sr.ht`](https://git.sr.ht/~gbmor/mw-rl)
+* [`github`](https://github.com/gbmor/mw-rl)
