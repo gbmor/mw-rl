@@ -6,8 +6,7 @@ use rltk::{
 };
 use specs::prelude::*;
 
-use crate::component::Viewshed;
-use crate::entity::{Player, TileType};
+use crate::entity::TileType;
 use crate::rect::Rect;
 
 #[derive(Clone, Default)]
@@ -17,6 +16,7 @@ pub struct Map {
     pub width: i32,
     pub height: i32,
     pub revealed_tiles: Vec<bool>,
+    pub visible_tiles: Vec<bool>,
 }
 
 impl Algorithm2D for Map {
@@ -88,6 +88,7 @@ impl Map {
             width: 80,
             height: 50,
             revealed_tiles: vec![false; 80 * 50],
+            visible_tiles: vec![false; 80 * 50],
         };
 
         const MAX_ROOMS: i32 = 30;
@@ -134,36 +135,6 @@ impl Map {
     }
 }
 
-/*
-pub fn new_test() -> Vec<TileType> {
-    let mut map = vec![TileType::Floor; 80 * 50];
-
-    (0..80).into_iter().for_each(|x| {
-        map[Map::xy_idx(x, 0)] = TileType::Wall;
-        map[Map::xy_idx(x, 49)] = TileType::Wall;
-    });
-
-    (0..50).into_iter().for_each(|y| {
-        map[Map::xy_idx(0, y)] = TileType::Wall;
-        map[Map::xy_idx(79, y)] = TileType::Wall;
-    });
-
-    //rando-splat of walls
-    let mut rng = rltk::RandomNumberGenerator::new();
-
-    (0..400).into_iter().for_each(|_| {
-        let x = rng.roll_dice(1, 79);
-        let y = rng.roll_dice(1, 49);
-        let idx = Map::xy_idx(x, y);
-        if idx != Map::xy_idx(40, 25) {
-            map[idx] = TileType::Wall;
-        }
-    });
-
-    map
-}
-*/
-
 pub fn draw(ecs: &World, ctx: &mut Rltk) {
     let map = ecs.fetch::<Map>();
     let mut y = 0;
@@ -171,26 +142,22 @@ pub fn draw(ecs: &World, ctx: &mut Rltk) {
 
     map.tiles.iter().enumerate().for_each(|(idx, tile)| {
         if map.revealed_tiles[idx] {
+            let glyph;
+            let mut fg;
             match tile {
                 TileType::Floor => {
-                    ctx.set(
-                        x,
-                        y,
-                        RGB::from_f32(0.5, 0.5, 0.5),
-                        RGB::from_f32(0., 0., 0.),
-                        rltk::to_cp437('.'),
-                    );
+                    glyph = rltk::to_cp437('.');
+                    fg = RGB::from_f32(0.0, 0.5, 0.5);
                 }
                 TileType::Wall => {
-                    ctx.set(
-                        x,
-                        y,
-                        RGB::from_f32(0.0, 1.0, 0.0),
-                        RGB::from_f32(0., 0., 0.),
-                        rltk::to_cp437('#'),
-                    );
+                    glyph = rltk::to_cp437('#');
+                    fg = RGB::from_f32(0., 1.0, 0.);
                 }
             }
+            if !map.visible_tiles[idx] {
+                fg = fg.to_greyscale();
+            }
+            ctx.set(x, y, fg, RGB::from_f32(0., 0., 0.), glyph);
         }
 
         x += 1;

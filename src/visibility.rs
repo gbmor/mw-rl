@@ -19,18 +19,25 @@ impl<'a> System<'a> for VisibilitySystem {
             .join()
             .into_iter()
             .for_each(|(ent, viewshed, pos)| {
-                viewshed.visible_tiles.clear();
-                viewshed.visible_tiles = field_of_view(
-                    Point::new(pos.x, pos.y),
-                    viewshed.range,
-                    &*map,
-                );
-                let p: Option<&Player> = player.get(ent);
-                if let Some(p) = p {
-                    viewshed.visible_tiles.iter().for_each(|vis| {
-                        let idx = map.xy_idx(vis.x, vis.y);
-                        map.revealed_tiles[idx] = true;
-                    });
+                if viewshed.dirty {
+                    viewshed.dirty = false;
+                    viewshed.visible_tiles.clear();
+                    viewshed.visible_tiles = field_of_view(
+                        Point::new(pos.x, pos.y),
+                        viewshed.range,
+                        &*map,
+                    );
+                    let _p: Option<&Player> = player.get(ent);
+                    if let Some(_p) = _p {
+                        map.visible_tiles
+                            .iter_mut()
+                            .for_each(|t| *t = false);
+                        viewshed.visible_tiles.iter().for_each(|vis| {
+                            let idx = map.xy_idx(vis.x, vis.y);
+                            map.revealed_tiles[idx] = true;
+                            map.visible_tiles[idx] = true;
+                        });
+                    }
                 }
             });
     }

@@ -49,6 +49,7 @@ fn main() {
         .with(Viewshed {
             visible_tiles: vec![],
             range: 8,
+            dirty: true,
         })
         .build();
 
