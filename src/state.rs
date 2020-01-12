@@ -21,9 +21,13 @@ impl GameState for State {
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
+        let map = self.ecs.fetch::<map::Map>();
 
-        for (pos, rend) in (&positions, &renderables).join() {
-            ctx.set(pos.x, pos.y, rend.fg, rend.bg, rend.glyph);
-        }
+        (&positions, &renderables).join().for_each(|(pos, rend)| {
+            let idx = map.xy_idx(pos.x, pos.y);
+            if map.visible_tiles[idx] {
+                ctx.set(pos.x, pos.y, rend.fg, rend.bg, rend.glyph);
+            }
+        });
     }
 }

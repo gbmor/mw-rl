@@ -53,5 +53,23 @@ fn main() {
         })
         .build();
 
+    map.rooms.iter().skip(1).for_each(|room| {
+        let (x, y) = room.center();
+        gs.ecs
+            .create_entity()
+            .with(Position { x, y })
+            .with(Renderable {
+                glyph: rltk::to_cp437('g'),
+                fg: RGB::named(rltk::RED),
+                bg: RGB::named(rltk::BLACK),
+            })
+            .with(Viewshed {
+                visible_tiles: Vec::new(),
+                range: 8,
+                dirty: true,
+            })
+            .build();
+    });
+
     rltk::main_loop(context, gs);
 }

@@ -51,8 +51,8 @@ impl Map {
     }
 
     pub fn apply_room(&mut self, room: &Rect) {
-        (room.y1 + 1..=room.y2).into_iter().for_each(|y| {
-            (room.x1 + 1..=room.x2).into_iter().for_each(|x| {
+        (room.y1 + 1..=room.y2).for_each(|y| {
+            (room.x1 + 1..=room.x2).for_each(|x| {
                 let idx = self.xy_idx(x, y);
                 self.tiles[idx] = TileType::Floor;
             });
@@ -60,7 +60,7 @@ impl Map {
     }
 
     pub fn apply_horiz_tunnel(&mut self, x1: i32, x2: i32, y: i32) {
-        (min(x1, x2)..=max(x1, x2)).into_iter().for_each(|x| {
+        (min(x1, x2)..=max(x1, x2)).for_each(|x| {
             let idx = self.xy_idx(x, y);
             if idx > 0
                 && idx < self.width as usize * self.height as usize
@@ -71,7 +71,7 @@ impl Map {
     }
 
     pub fn apply_vert_tunnel(&mut self, y1: i32, y2: i32, x: i32) {
-        (min(y1, y2)..=max(y1, y2)).into_iter().for_each(|y| {
+        (min(y1, y2)..=max(y1, y2)).for_each(|y| {
             let idx = self.xy_idx(x, y);
             if idx > 0
                 && idx < self.width as usize * self.height as usize
@@ -97,7 +97,7 @@ impl Map {
 
         let mut rng = RandomNumberGenerator::new();
 
-        (0..MAX_ROOMS).into_iter().for_each(|_| {
+        (0..MAX_ROOMS).for_each(|_| {
             let w = rng.range(MIN_SIZE, MAX_SIZE);
             let h = rng.range(MIN_SIZE, MAX_SIZE);
             let x = rng.roll_dice(1, 80 - w - 1) - 1;

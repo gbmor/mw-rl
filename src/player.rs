@@ -11,10 +11,8 @@ pub fn try_move(dx: i32, dy: i32, ecs: &mut World) {
     let mut viewsheds = ecs.write_storage::<Viewshed>();
     let map = ecs.fetch::<Map>();
 
-    (&mut players, &mut posns, &mut viewsheds)
-        .join()
-        .into_iter()
-        .for_each(|(_player, pos, viewshed)| {
+    (&mut players, &mut posns, &mut viewsheds).join().for_each(
+        |(_player, pos, viewshed)| {
             let dest_idx = map.xy_idx(pos.x + dx, pos.y + dy);
             if map.tiles[dest_idx] != TileType::Wall {
                 pos.x += dx;
@@ -34,7 +32,8 @@ pub fn try_move(dx: i32, dy: i32, ecs: &mut World) {
                 }
                 viewshed.dirty = true;
             }
-        });
+        },
+    );
 }
 
 pub fn input(gs: &mut State, ctx: &mut Rltk) {
